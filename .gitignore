@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+.next/
+.vercel/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.env
+.env.local
+
+# Build
+build/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
