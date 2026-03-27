@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export default function TaskDetailPage({ params }: { params: { id: string } }) {
+export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <nav
@@ -11,7 +12,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
         <Link href="/dashboard" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
           <ArrowLeft size={18} />
         </Link>
-        <span className="font-semibold text-[var(--text-primary)]">Task #{params.id}</span>
+        <span className="font-semibold text-[var(--text-primary)]">Task #{id}</span>
       </nav>
       <main className="max-w-2xl mx-auto px-4 py-8">
         <p className="text-[var(--text-secondary)] text-sm">
