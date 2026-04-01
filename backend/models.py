@@ -1,13 +1,13 @@
+from typing import Optional
 from datetime import datetime
-from typing import Literal, Optional
 from sqlmodel import SQLModel, Field, Column, JSON
 
 
 class TaskBase(SQLModel):
     title: str = Field(min_length=1, max_length=200)
     description: Optional[str] = Field(default=None, max_length=1000)
-    completed: bool = False
-    priority: Literal["low", "medium", "high", "urgent"] = "medium"
+    completed: Optional[bool] = False
+    priority: str = Field(default="medium")  # low / medium / high / urgent
     tags: list[str] = Field(default=[], sa_column=Column(JSON))
     due_date: Optional[datetime] = None
 
@@ -28,7 +28,7 @@ class TaskUpdate(SQLModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=200)
     description: Optional[str] = None
     completed: Optional[bool] = None
-    priority: Optional[Literal["low", "medium", "high", "urgent"]] = None
+    priority: Optional[str] = None
     tags: Optional[list[str]] = None
     due_date: Optional[datetime] = None
 
