@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deployment
+  namespace: todo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "worker"
+        dapr.io/app-port: "8001"
+    spec:
+      containers:
+      - name: worker
+        image: hackathon-2-worker:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: todo-secrets
+              key: DATABASE_URL
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: todo-secrets
+              key: GROQ_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-service
+  namespace: todo-app
+spec:
+  selector:
+    app: worker
+  ports:
+  - protocol: TCP
+    port: 8001
+    targetPort: 8001
+  type: ClusterIP

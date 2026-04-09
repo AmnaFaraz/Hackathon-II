@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from database import get_session
 from models import Task, TaskCreate, TaskRead, TaskUpdate
+from dapr.clients import DaprClient
+import json
 
 router = APIRouter()
 
@@ -54,6 +56,25 @@ def create_task(
     session.add(task)
     session.commit()
     session.refresh(task)
+
+    # Phase V: Publish event to Dapr
+    try:
+        with DaprClient() as client:
+            client.publish_event(
+                pubsub_name="todo-pubsub",
+                topic_name="task-events",
+                data=json.dumps({
+                    "id": task.id,
+                    "user_id": user_id,
+                    "title": task.title,
+                    "action": "created"
+                }),
+                data_content_type="application/json",
+            )
+    except Exception as e:
+        # Don't fail the request if Dapr is not available (common in local dev)
+        print(f"Dapr publish failed: {e}")
+
     return task
 
 

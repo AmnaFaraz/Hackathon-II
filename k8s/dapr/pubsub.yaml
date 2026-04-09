@@ -1,0 +1,15 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+  namespace: todo-app
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka-service.kafka-namespace:9092"
+  - name: authRequired
+    value: "false"
+  - name: disableEntityManagement
+    value: "false"
