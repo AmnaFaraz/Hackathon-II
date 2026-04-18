@@ -1,6 +1,8 @@
 # Hackathon II — Evolution of TODO
 
 **Student:** Amna Faraz | **GitHub:** AmnaFaraz
+**Live Frontend:** [https://panaversity-hackathon-2.vercel.app](https://panaversity-hackathon-2.vercel.app)
+**Live Backend:** [https://hackathon-ii-backend-l02o.onrender.com](https://hackathon-ii-backend-l02o.onrender.com)
 **Points:** 1000 pts + 600 bonus
 **Submit:** https://forms.gle/KMKEKaFUD6ZX4UtY8
 
