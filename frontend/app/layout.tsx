@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BottomNav } from "@/components/BottomNav";
+import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "TaskAI | AI-Powered Task Manager",
@@ -23,7 +24,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <Navbar />
+          <main className="pt-20">
+            {children}
+          </main>
           <BottomNav />
         </ThemeProvider>
       </body>

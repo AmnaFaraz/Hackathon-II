@@ -16,11 +16,16 @@ interface TaskCardProps {
 export function TaskCard({ task, userId, onUpdate, onDelete }: TaskCardProps) {
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const handleToggle = async () => {
     setLoading(true);
     try {
       const updated = await api.tasks.toggleComplete(userId, task.id);
+      if (!task.completed) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 1000);
+      }
       onUpdate(updated);
     } catch (err) {
       console.error(err);
@@ -62,6 +67,23 @@ export function TaskCard({ task, userId, onUpdate, onDelete }: TaskCardProps) {
         isDeleting && "slide-out-left"
       )}
     >
+      {showConfetti && (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-50">
+          {[...Array(15)].map((_, i) => (
+            <div 
+              key={i} 
+              className="absolute w-2 h-2 rounded-full bg-accent-primary animate-confetti"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: `rotate(${Math.random() * 360}deg)`,
+                animationDelay: `${Math.random() * 0.2}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Left Priority Border */}
       <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", priorityColors[task.priority])} />
 
