@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Trash2, Pencil, Tag, Calendar } from "lucide-react";
+import { Check, Trash2, Pencil, Tag, Calendar, MoreVertical } from "lucide-react";
 import { Task, api } from "@/lib/api";
-import { PriorityBadge } from "./PriorityBadge";
-import { formatRelative } from "@/lib/utils";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
   task: Task;
@@ -15,117 +15,122 @@ interface TaskCardProps {
 
 export function TaskCard({ task, userId, onUpdate, onDelete }: TaskCardProps) {
   const [loading, setLoading] = useState(false);
-  const [animating, setAnimating] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleComplete = async () => {
+  const handleToggle = async () => {
     setLoading(true);
-    setAnimating(true);
     try {
       const updated = await api.tasks.toggleComplete(userId, task.id);
       onUpdate(updated);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
-      setTimeout(() => setAnimating(false), 300);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 3000);
-      return;
-    }
-    setLoading(true);
+    setIsDeleting(true);
     try {
       await api.tasks.delete(userId, task.id);
       onDelete(task.id);
-    } finally {
-      setLoading(false);
-      setConfirmDelete(false);
+    } catch (err) {
+      console.error(err);
+      setIsDeleting(false);
     }
+  };
+
+  const priorityColors = {
+    urgent: "bg-priority-high",
+    high: "bg-priority-high",
+    medium: "bg-priority-medium",
+    low: "bg-priority-low",
+  };
+
+  const priorityLabels = {
+    urgent: "CRITICAL",
+    high: "HIGH",
+    medium: "MEDIUM",
+    low: "LOW",
   };
 
   return (
     <div
-      className="rounded-lg border p-4 transition-all hover:border-[var(--accent)] group"
-      style={{
-        background: "var(--surface)",
-        borderColor: "var(--border)",
-        opacity: task.completed ? 0.6 : 1,
-      }}
+      className={cn(
+        "group relative bg-bg-surface border border-border-primary rounded-2xl p-6 transition-all card-hover overflow-hidden",
+        task.completed && "opacity-50 grayscale-[0.5]",
+        isDeleting && "slide-out-left"
+      )}
     >
-      <div className="flex items-start gap-3">
-        {/* Complete toggle */}
-        <button
-          onClick={handleComplete}
-          disabled={loading}
-          className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-            animating ? "complete-pop" : ""
-          }`}
-          style={{
-            borderColor: task.completed ? "var(--accent)" : "var(--border)",
-            background: task.completed ? "var(--accent)" : "transparent",
-          }}
-          aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
-        >
-          {task.completed && <Check size={12} color="#080B14" strokeWidth={3} />}
-        </button>
+      {/* Left Priority Border */}
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", priorityColors[task.priority])} />
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className={`font-medium text-sm ${task.completed ? "line-through text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}
-            >
+      <div className="flex flex-col h-full">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className={cn(
+              "text-lg font-bold text-text-primary transition-all",
+              task.completed && "line-through text-text-muted"
+            )}>
               {task.title}
-            </span>
-            <PriorityBadge priority={task.priority} />
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={cn(
+                "text-[10px] font-black px-2 py-0.5 rounded text-bg-primary uppercase tracking-wider",
+                priorityColors[task.priority]
+              )}>
+                {priorityLabels[task.priority]}
+              </span>
+              {task.due_date && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-text-secondary uppercase tracking-widest px-2 py-0.5 bg-bg-card rounded border border-border-primary">
+                  <Calendar size={10} />
+                  {format(new Date(task.due_date), "MMM d")}
+                </span>
+              )}
+            </div>
           </div>
 
-          {task.description && (
-            <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">
-              {task.description}
-            </p>
-          )}
-
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
-            {task.tags.length > 0 && (
-              <div className="flex items-center gap-1">
-                <Tag size={10} className="text-[var(--text-secondary)]" />
-                {task.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-1.5 py-0.5 rounded"
-                    style={{ background: "var(--surface-2)", color: "var(--text-secondary)" }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            {task.due_date && (
-              <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]">
-                <Calendar size={10} />
-                <span>{new Date(task.due_date).toLocaleDateString()}</span>
-              </div>
-            )}
-            <span className="text-xs text-[var(--text-secondary)] ml-auto">
-              {formatRelative(task.created_at)}
-            </span>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleToggle}
+              className={cn(
+                "p-2 rounded-lg transition-colors btn-click",
+                task.completed ? "text-accent-primary bg-accent-primary/10" : "text-text-secondary hover:bg-border-primary"
+              )}
+              title="Toggle Complete"
+            >
+              <Check size={16} />
+            </button>
+            <button
+              className="p-2 text-text-secondary rounded-lg hover:bg-border-primary transition-colors btn-click"
+              title="Edit Task"
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="p-2 text-priority-high/60 hover:text-priority-high rounded-lg hover:bg-priority-high/10 transition-colors btn-click"
+              title="Delete Task"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={handleDelete}
-            className="p-1.5 rounded transition-colors hover:bg-red-500/10"
-            style={{ color: confirmDelete ? "var(--urgent)" : "var(--text-secondary)" }}
-            title={confirmDelete ? "Click again to confirm" : "Delete task"}
-          >
-            <Trash2 size={14} />
-          </button>
+        <p className={cn(
+          "text-sm text-text-secondary mb-6 line-clamp-2 leading-relaxed flex-1",
+          task.completed && "text-text-muted"
+        )}>
+          {task.description || "No description provided."}
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          {task.tags.map(tag => (
+            <span key={tag} className="flex items-center gap-1 text-[11px] font-medium text-text-secondary bg-bg-card border border-border-primary px-2.5 py-1 rounded-lg">
+              <Tag size={10} />
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
     </div>

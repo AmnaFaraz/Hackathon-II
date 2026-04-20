@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Plus, Calendar, Tag, AlertCircle } from "lucide-react";
 import { api, TaskCreate } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 interface TaskModalProps {
   userId: string;
@@ -33,191 +34,144 @@ export function TaskModal({ userId, onClose, onCreated }: TaskModalProps) {
     setLoading(true);
     setError("");
     try {
+      // Process tags from comma separated input if needed, but here we use a list
       const task = await api.tasks.create(userId, form);
       onCreated(task);
-      onClose();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create task.");
+    } catch (err: any) {
+      setError(err.message || "Failed to create task.");
     } finally {
       setLoading(false);
     }
   };
 
-  const addTag = () => {
-    const tag = tagInput.trim();
-    if (tag && !form.tags?.includes(tag)) {
-      setForm((f) => ({ ...f, tags: [...(f.tags || []), tag] }));
-      setTagInput("");
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setForm((f) => ({ ...f, tags: f.tags?.filter((t) => t !== tag) }));
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setTagInput(val);
+    const tags = val.split(",").map(t => t.trim()).filter(t => t !== "");
+    setForm(f => ({ ...f, tags }));
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(8,11,20,0.8)", backdropFilter: "blur(4px)" }}
-    >
-      <div
-        className="w-full max-w-md rounded-xl border p-6"
-        style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">New Task</h2>
-          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-            <X size={18} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-bg-primary/80 backdrop-blur-sm fade-in" 
+        onClick={onClose}
+      />
+      
+      {/* Modal Content */}
+      <div className="relative w-full max-w-lg bg-bg-surface border border-border-primary rounded-3xl p-8 shadow-2xl scale-in overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-accent-primary" />
+        
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-black text-text-primary uppercase tracking-tight">Create New Task</h2>
+            <p className="text-text-secondary text-sm">Add a new task to your workspace</p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="p-2 text-text-secondary hover:text-text-primary bg-bg-card rounded-xl border border-border-primary transition-colors btn-click"
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
-          <div>
-            <label className="block text-xs text-[var(--text-secondary)] mb-1">Title *</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-text-muted uppercase tracking-widest ml-1">Task Title</label>
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              placeholder="What needs to be done?"
+              placeholder="What are you working on?"
               autoFocus
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none focus:ring-1"
-              style={{
-                background: "var(--surface-2)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
+              className="w-full px-5 py-3 bg-bg-card border border-border-primary rounded-2xl text-text-primary focus:outline-none focus:border-accent-primary transition-all placeholder:text-text-muted"
             />
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-xs text-[var(--text-secondary)] mb-1">Description</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-text-muted uppercase tracking-widest ml-1">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Add details..."
+              placeholder="Provide more context..."
               rows={3}
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
-              style={{
-                background: "var(--surface-2)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
+              className="w-full px-5 py-3 bg-bg-card border border-border-primary rounded-2xl text-text-primary focus:outline-none focus:border-accent-primary transition-all resize-none placeholder:text-text-muted"
             />
           </div>
 
-          {/* Priority + Due Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-[var(--text-secondary)] mb-1">Priority</label>
-              <select
-                value={form.priority}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    priority: e.target.value as typeof form.priority,
-                  }))
-                }
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
-              </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Priority */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-text-muted uppercase tracking-widest ml-1">Priority</label>
+              <div className="relative">
+                <select
+                  value={form.priority}
+                  onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as any }))}
+                  className="w-full appearance-none px-5 py-3 bg-bg-card border border-border-primary rounded-2xl text-text-primary focus:outline-none focus:border-accent-primary transition-all cursor-pointer"
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                  <option value="urgent">Urgent Priority</option>
+                </select>
+                <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" size={16} />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs text-[var(--text-secondary)] mb-1">Due Date</label>
-              <input
-                type="date"
-                value={form.due_date?.split("T")[0] || ""}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    due_date: e.target.value ? new Date(e.target.value).toISOString() : undefined,
-                  }))
-                }
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                }}
-              />
+
+            {/* Due Date */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-text-muted uppercase tracking-widest ml-1">Due Date</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={form.due_date?.split("T")[0] || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value ? new Date(e.target.value).toISOString() : undefined }))}
+                  className="w-full px-5 py-3 bg-bg-card border border-border-primary rounded-2xl text-text-primary focus:outline-none focus:border-accent-primary transition-all flex justify-between"
+                />
+              </div>
             </div>
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-xs text-[var(--text-secondary)] mb-1">Tags</label>
-            <div className="flex gap-2">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-text-muted uppercase tracking-widest ml-1">Tags (Comma separated)</label>
+            <div className="relative">
               <input
                 type="text"
                 value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-                placeholder="Add tag + Enter"
-                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
-                style={{
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                }}
+                onChange={handleTagsChange}
+                placeholder="e.g. work, urgent, hobby"
+                className="w-full pl-12 pr-5 py-3 bg-bg-card border border-border-primary rounded-2xl text-text-primary focus:outline-none focus:border-accent-primary transition-all placeholder:text-text-muted"
               />
+              <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" size={18} />
             </div>
-            {form.tags && form.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {form.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs cursor-pointer"
-                    style={{ background: "var(--surface-2)", color: "var(--accent)" }}
-                    onClick={() => removeTag(tag)}
-                  >
-                    {tag} ×
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
-          {error && <p className="text-xs text-[var(--urgent)]">{error}</p>}
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm flex items-center gap-2">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2 rounded-lg text-sm transition-colors"
-              style={{
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
-              }}
+              className="flex-1 px-6 py-4 border border-border-primary text-text-secondary font-bold rounded-2xl hover:bg-bg-card transition-colors btn-click"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
-              style={{
-                background: loading ? "var(--border)" : "var(--accent)",
-                color: "#080B14",
-              }}
+              className="flex-1 px-6 py-4 bg-accent-primary text-bg-primary font-bold rounded-2xl btn-click shadow-lg shadow-accent-primary/20 disabled:opacity-50"
             >
-              {loading ? "Creating..." : "Create Task"}
+              {loading ? "Creating task..." : "Create Task"}
             </button>
           </div>
         </form>
